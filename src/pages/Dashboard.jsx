@@ -27,7 +27,7 @@ function Dashboard({ user, onLogout, activeTab }) {
       if (!token) return;
       
       // Fetch Global Stats
-      const statsRes = await fetch('http://localhost:5000/api/emails/stats', {
+      const statsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const statsData = await statsRes.json();
@@ -42,7 +42,7 @@ function Dashboard({ user, onLogout, activeTab }) {
       }
 
       // Fetch Recent Jobs
-      const filesRes = await fetch('http://localhost:5000/api/emails/files?page=1&limit=5', {
+      const filesRes = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/files?page=1&limit=5`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const filesData = await filesRes.json();
@@ -51,7 +51,7 @@ function Dashboard({ user, onLogout, activeTab }) {
       }
 
       // Fetch Daily Stats
-      const dailyRes = await fetch('http://localhost:5000/api/emails/daily-stats', {
+      const dailyRes = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/daily-stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dailyData = await dailyRes.json();

@@ -53,7 +53,7 @@ function Uploads({ onUploadSuccess }) {
       const token = sessionStorage.getItem('token');
       if (!token) return;
 
-      const statsRes = await fetch('http://localhost:5000/api/emails/stats', {
+      const statsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const statsData = await statsRes.json();
@@ -71,7 +71,7 @@ function Uploads({ onUploadSuccess }) {
         endDate: tableParams.endDate
       });
 
-      const res = await fetch(`http://localhost:5000/api/emails/files?${params.toString()}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/files?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -116,7 +116,7 @@ function Uploads({ onUploadSuccess }) {
     });
     
     try {
-      const res = await fetch(`http://localhost:5000/api/emails/export?${params.toString()}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/export?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Export failed');
@@ -138,7 +138,7 @@ function Uploads({ onUploadSuccess }) {
     setAutomationLoading(true);
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/emails/start-automation', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/start-automation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ jobId, headless: true })
@@ -161,7 +161,7 @@ function Uploads({ onUploadSuccess }) {
         setAutomationLoading(true);
         try {
           const token = sessionStorage.getItem('token');
-          const res = await fetch('http://localhost:5000/api/emails/stop-automation', {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/stop-automation`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ jobId })
@@ -187,7 +187,7 @@ function Uploads({ onUploadSuccess }) {
         setDeleteLoading(jobId);
         try {
           const token = sessionStorage.getItem('token');
-          const res = await fetch(`http://localhost:5000/api/emails/soft-delete/${jobId}`, {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/soft-delete/${jobId}`, {
             method: 'PATCH',
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -235,7 +235,7 @@ function Uploads({ onUploadSuccess }) {
     formData.append('file', file);
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/emails/upload', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData

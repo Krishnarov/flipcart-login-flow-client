@@ -43,8 +43,8 @@ function Reports() {
   const fetchAll = useCallback(async () => {
     try {
       const [jobsRes, slotsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/emails/files?page=1&limit=100&sortField=createdAt&sortOrder=desc', { headers: { Authorization: `Bearer ${token()}` } }),
-        fetch('http://localhost:5000/api/emails/slots', { headers: { Authorization: `Bearer ${token()}` } })
+        fetch('${import.meta.env.VITE_API_URL}/api/emails/files?page=1&limit=100&sortField=createdAt&sortOrder=desc', { headers: { Authorization: `Bearer ${token()}` } }),
+        fetch('${import.meta.env.VITE_API_URL}/api/emails/slots', { headers: { Authorization: `Bearer ${token()}` } })
       ]);
       const jobsData = await jobsRes.json();
       const slotsData = await slotsRes.json();
@@ -60,7 +60,7 @@ function Reports() {
   useEffect(() => {
     const fetchGlobalStats = async () => {
       const params = new URLSearchParams({ slot: globalSlot, status: globalStatus });
-      const res = await fetch(`http://localhost:5000/api/emails/global-report?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/global-report?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
       const data = await res.json();
       if (data.success) setGlobalStats({ total: data.total, data: data.data });
     };
@@ -76,7 +76,7 @@ function Reports() {
     setGlobalExporting(key);
     try {
       const params = new URLSearchParams({ slot: globalSlot, status: statusFilter });
-      const res = await fetch(`http://localhost:5000/api/emails/global-report?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/global-report?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
       const data = await res.json();
       if (!data.success || data.data.length === 0) { addToast('No data found', 'error'); return; }
 
@@ -103,7 +103,7 @@ function Reports() {
     setGlobalExporting('global_cookies');
     try {
       const params = new URLSearchParams({ slot: globalSlot, status: 'success' });
-      const res = await fetch(`http://localhost:5000/api/emails/global-report?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/global-report?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
       const data = await res.json();
       if (!data.success) throw new Error('Failed');
 
@@ -139,7 +139,7 @@ function Reports() {
       const params = new URLSearchParams();
       if (globalSlot && globalSlot !== 'all') params.set('slot', globalSlot);
       if (globalStatus && globalStatus !== 'all') params.set('status', globalStatus);
-      const res = await fetch(`http://localhost:5000/api/emails/delete-all-data?${params}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/delete-all-data?${params}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token()}` }
       });
@@ -163,7 +163,7 @@ function Reports() {
     const key = `${job._id}_${statusFilter}`;
     setExp(key, true);
     try {
-      const res = await fetch(`http://localhost:5000/api/emails/file-details?jobId=${job._id}&page=1&limit=10000`, { headers: { Authorization: `Bearer ${token()}` } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/file-details?jobId=${job._id}&page=1&limit=10000`, { headers: { Authorization: `Bearer ${token()}` } });
       const data = await res.json();
       if (!data.success) throw new Error('Failed');
 
@@ -188,7 +188,7 @@ function Reports() {
     const key = `${job._id}_cookies`;
     setExp(key, true);
     try {
-      const res = await fetch(`http://localhost:5000/api/emails/file-details?jobId=${job._id}&page=1&limit=10000`, { headers: { Authorization: `Bearer ${token()}` } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/file-details?jobId=${job._id}&page=1&limit=10000`, { headers: { Authorization: `Bearer ${token()}` } });
       const data = await res.json();
       if (!data.success) throw new Error('Failed');
 

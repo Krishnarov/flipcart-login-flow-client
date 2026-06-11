@@ -70,7 +70,7 @@ function JobDetails() {
         search: tableParams.search, sortField: tableParams.sortField,
         sortOrder: tableParams.sortOrder, startDate: tableParams.startDate, endDate: tableParams.endDate
       });
-      const res = await fetch(`http://localhost:5000/api/emails/file-details?${params.toString()}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/file-details?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -128,7 +128,7 @@ function JobDetails() {
     const token = sessionStorage.getItem('token');
     const params = new URLSearchParams({ type: 'details', jobId, search: tableParams.search, startDate: tableParams.startDate, endDate: tableParams.endDate });
     try {
-      const res = await fetch(`http://localhost:5000/api/emails/export?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/export?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -143,7 +143,7 @@ function JobDetails() {
     setLiveLogs([]);
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/emails/start-automation', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/start-automation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ jobId, headless: !showBrowser })
@@ -158,7 +158,7 @@ function JobDetails() {
     setAutomationLoading(true);
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/emails/stop-automation', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/stop-automation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ jobId })
@@ -174,7 +174,7 @@ function JobDetails() {
     setLiveLogs([]);
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/emails/retry-automation', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/retry-automation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ jobId, reasonFilter, headless: !showBrowser })
@@ -189,7 +189,7 @@ function JobDetails() {
     setAutomationLoading(true);
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/emails/retry-single', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/retry-single`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ emailId, headless: !showBrowser })
@@ -264,12 +264,12 @@ function JobDetails() {
               onMouseLeave={e => { const p = e.currentTarget.querySelector('.ss-preview'); if (p) p.style.display = 'none'; }}
             >
               <button type="button" className="ss-icon-btn"
-                onClick={(e) => { e.stopPropagation(); setScreenshotModal(`http://localhost:5000/${row.screenshot}`); }}
+                onClick={(e) => { e.stopPropagation(); setScreenshotModal(`${import.meta.env.VITE_API_URL}/${row.screenshot}`); }}
                 title="View screenshot">
                 <ImageIcon size={14} />
               </button>
               <div className="ss-preview" style={{ display: 'none', position: 'absolute', bottom: '130%', right: 0, zIndex: 9999, pointerEvents: 'none' }}>
-                <img src={`http://localhost:5000/${row.screenshot}`} alt="preview"
+                <img src={`${import.meta.env.VITE_API_URL}/${row.screenshot}`} alt="preview"
                   style={{ width: '150px', height: '200px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', display: 'block', boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }} />
               </div>
             </div>

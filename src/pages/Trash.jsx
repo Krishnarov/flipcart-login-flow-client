@@ -57,7 +57,7 @@ function Trash() {
         endDate: tableParams.endDate
       });
 
-      const res = await fetch(`http://localhost:5000/api/emails/trash?${params.toString()}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/trash?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -104,7 +104,7 @@ function Trash() {
     });
     
     try {
-      const res = await fetch(`http://localhost:5000/api/emails/export?${params.toString()}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/export?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Export failed');
@@ -137,7 +137,7 @@ function Trash() {
       const token = sessionStorage.getItem('token');
       await Promise.allSettled(
         jobIds.map(async id => {
-          const res = await fetch(`http://localhost:5000/api/emails/restore/${id}`, {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/restore/${id}`, {
             method: 'PATCH',
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -167,7 +167,7 @@ function Trash() {
           const token = sessionStorage.getItem('token');
           await Promise.allSettled(
             jobIds.map(async id => {
-              const res = await fetch(`http://localhost:5000/api/emails/permanent-delete/${id}`, {
+              const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/permanent-delete/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
               });
