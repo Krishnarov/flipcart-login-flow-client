@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import JobDetails from './pages/JobDetails';
+import Reports from './pages/Reports';
 import './App.css';
 
 // Protected Route Guard: Redirects to /auth if no session token
@@ -162,6 +163,20 @@ function MainApp() {
               user={user || JSON.parse(sessionStorage.getItem('user') || '{}')}
               onLogout={handleLogout}
               activeTab="job"
+            />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected Reports Route */}
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <Dashboard
+              user={user || JSON.parse(sessionStorage.getItem('user') || '{}')}
+              onLogout={handleLogout}
+              activeTab="reports"
             />
           </ProtectedRoute>
         }

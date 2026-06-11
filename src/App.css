@@ -1308,6 +1308,13 @@
   animation: statusPulse 1.8s infinite ease-in-out;
 }
 
+.status-inprogress {
+  background: rgba(139, 92, 246, 0.12);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  animation: statusPulse 1.8s infinite ease-in-out;
+}
+
 .status-completed {
   background: rgba(16, 185, 129, 0.1);
   color: #34d399;
@@ -1543,4 +1550,406 @@
 }
 .modal-btn-primary:hover {
   background: var(--accent-hover);
+}
+
+/* ── DataTable Filters ─────────────────────────────────────────── */
+.datatable-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+}
+
+.datatable-filters-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dt-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 36px;
+  transition: border-color 0.2s;
+}
+
+.dt-date-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 8px;
+  padding: 0 10px;
+  height: 36px;
+  transition: border-color 0.2s;
+}
+
+.dt-search-wrap:focus-within,
+.dt-date-wrap:focus-within {
+  border-color: rgba(139,92,246,0.5);
+}
+
+.dt-search-icon,
+.dt-cal-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.dt-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  height: 100%;
+  font-family: inherit;
+}
+
+.dt-search-input { width: 190px; }
+
+.dt-date-input {
+  width: 125px;
+  color-scheme: dark;
+}
+
+.dt-date-sep {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.dt-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(139,92,246,0.3);
+  background: rgba(139,92,246,0.1);
+  color: #a78bfa;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.dt-export-btn:hover {
+  background: rgba(139,92,246,0.2);
+  border-color: rgba(139,92,246,0.55);
+  color: #c4b5fd;
+}
+
+/* ── Live Log Panel ──────────────────────────────────────── */
+.live-log-panel {
+  background: rgba(5, 8, 14, 0.85);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+}
+
+.live-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(139,92,246,0.08);
+  border-bottom: 1px solid rgba(139,92,246,0.15);
+}
+
+.live-log-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: inherit;
+}
+
+.live-log-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50% !important;
+  background: #34d399;
+  animation: logPulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.live-log-clear-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 3px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.live-log-clear-btn:hover {
+  color: #f87171;
+  border-color: rgba(239,68,68,0.3);
+}
+
+.live-log-box {
+  height: 300px;
+  overflow-y: auto;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139,92,246,0.3) transparent;
+}
+
+.live-log-box::-webkit-scrollbar { width: 4px; }
+.live-log-box::-webkit-scrollbar-track { background: transparent; }
+.live-log-box::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 2px; }
+
+.live-log-empty {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: auto;
+  opacity: 0.5;
+}
+
+.live-log-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.025);
+}
+
+.live-log-time {
+  color: rgba(255,255,255,0.3);
+  font-size: 12px;
+  flex-shrink: 0;
+  min-width: 62px;
+}
+
+.live-log-icon {
+  flex-shrink: 0;
+  font-size: 11px;
+  width: 16px;
+}
+
+.live-log-email {
+  color: #60a5fa;
+  font-size: 12px;
+  flex-shrink: 0;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(59,130,246,0.08);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.live-log-msg {
+  color: rgba(255,255,255,0.75);
+  flex: 1;
+}
+
+.log-type-success .live-log-msg { color: #34d399; }
+.log-type-error   .live-log-msg { color: #f87171; }
+.log-type-warn    .live-log-msg { color: #fbbf24; }
+.log-type-step    .live-log-msg { color: #c4b5fd; }
+.log-type-info    .live-log-msg { color: rgba(255,255,255,0.65); }
+
+/* Screenshot & Retry icon buttons */
+.ss-icon-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6,182,212,0.08);
+  border: 1px solid rgba(6,182,212,0.2);
+  color: #67e8f9;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.ss-icon-btn:hover:not(:disabled) {
+  background: rgba(6,182,212,0.18);
+  border-color: rgba(6,182,212,0.45);
+  color: #22d3ee;
+}
+
+.retry-icon-btn {
+  background: rgba(139,92,246,0.08);
+  border-color: rgba(139,92,246,0.2);
+  color: #a78bfa;
+}
+
+.retry-icon-btn:hover:not(:disabled) {
+  background: rgba(139,92,246,0.18);
+  border-color: rgba(139,92,246,0.45);
+  color: #c4b5fd;
+}
+
+.retry-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Reports Page */
+.report-job-card {
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.02);
+  transition: border-color 0.2s;
+}
+
+.report-job-card:hover {
+  border-color: rgba(255,255,255,0.12);
+}
+
+.report-job-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  cursor: pointer;
+  gap: 12px;
+  transition: background 0.15s;
+}
+
+.report-job-header:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.report-export-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 0 18px 18px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 16px;
+}
+
+.report-export-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+}
+
+.report-export-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.report-export-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.report-export-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.report-export-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.report-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+.report-export-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.success-export-btn {
+  background: rgba(16,185,129,0.1);
+  border-color: rgba(16,185,129,0.25);
+  color: #34d399;
+}
+.success-export-btn:hover:not(:disabled) {
+  background: rgba(16,185,129,0.2);
+  border-color: rgba(16,185,129,0.45);
+}
+
+.failed-export-btn {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.25);
+  color: #f87171;
+}
+.failed-export-btn:hover:not(:disabled) {
+  background: rgba(239,68,68,0.2);
+  border-color: rgba(239,68,68,0.45);
+}
+
+.cookies-export-btn {
+  background: rgba(251,191,36,0.1);
+  border-color: rgba(251,191,36,0.25);
+  color: #fbbf24;
+}
+.cookies-export-btn:hover:not(:disabled) {
+  background: rgba(251,191,36,0.2);
+  border-color: rgba(251,191,36,0.45);
+}
+
+.full-export-btn {
+  background: rgba(139,92,246,0.1);
+  border-color: rgba(139,92,246,0.25);
+  color: #a78bfa;
+}
+.full-export-btn:hover:not(:disabled) {
+  background: rgba(139,92,246,0.2);
+  border-color: rgba(139,92,246,0.45);
 }

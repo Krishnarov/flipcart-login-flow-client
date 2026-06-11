@@ -1,16 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Key, LayoutDashboard, Bot, Trash2, Settings as SettingsIcon, LogOut, Folder, Mail, CheckCircle2, XCircle, Zap, ArrowRight, Activity, Clock } from 'lucide-react';
+import { Key, LayoutDashboard, Bot, Trash2, Settings as SettingsIcon, LogOut, Folder, Mail, CheckCircle2, XCircle, Zap, ArrowRight, Activity, Terminal, BarChart2 } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line, Area, AreaChart } from 'recharts';
 import Uploads from './Uploads';
 import Trash from './Trash';
 import JobDetails from './JobDetails';
 import Settings from './Settings';
+import Reports from './Reports';
 import { socket } from '../socket';
+
+const LOG_ICONS = { step: '▶', success: '✅', error: '❌', warn: '⚠️', info: '•' };
+const MAX_LOGS = 60;
 
 function Dashboard({ user, onLogout, activeTab }) {
   const [globalStats, setGlobalStats] = useState({ jobs: 0, total: 0, success: 0, failed: 0 });
   const [recentJobs, setRecentJobs] = useState([]);
   const [runningJobs, setRunningJobs] = useState(0);
+  const [globalLogs, setGlobalLogs] = useState([]);
+  const [dailyStats, setDailyStats] = useState([]);
+  const dashLogRef = useRef(null);
   const navigate = useNavigate();
 
   const fetchStats = async () => {
@@ -41,21 +49,37 @@ function Dashboard({ user, onLogout, activeTab }) {
       if (filesData.success) {
         setRecentJobs(filesData.data);
       }
+
+      // Fetch Daily Stats
+      const dailyRes = await fetch('http://localhost:5000/api/emails/daily-stats', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const dailyData = await dailyRes.json();
+      if (dailyData.success) setDailyStats(dailyData.data);
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
     }
   };
 
   useEffect(() => {
-    fetchStats();
-    
-    const handleJobUpdate = () => {
-      fetchStats();
-    };
+    if (dashLogRef.current) dashLogRef.current.scrollTop = dashLogRef.current.scrollHeight;
+  }, [globalLogs]);
 
+  useEffect(() => {
+    fetchStats();
+    const handleJobUpdate = () => { fetchStats(); };
+    const handleLog = (data) => {
+      setGlobalLogs(prev => {
+        const entry = { ...data, id: Date.now() + Math.random() };
+        const next = [...prev, entry];
+        return next.length > MAX_LOGS ? next.slice(next.length - MAX_LOGS) : next;
+      });
+    };
     socket.on('job-update', handleJobUpdate);
+    socket.on('automation-log', handleLog);
     return () => {
       socket.off('job-update', handleJobUpdate);
+      socket.off('automation-log', handleLog);
     };
   }, [activeTab]);
 
@@ -94,6 +118,14 @@ function Dashboard({ user, onLogout, activeTab }) {
           </button>
           <button 
             type="button" 
+            className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`}
+            onClick={() => navigate('/reports')}
+          >
+            <span className="nav-icon"><BarChart2 size={18} /></span>
+            <span className="nav-label">Reports</span>
+          </button>
+          <button 
+            type="button" 
             className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => navigate('/settings')}
           >
@@ -116,6 +148,7 @@ function Dashboard({ user, onLogout, activeTab }) {
           <div className="header-title">
             <h1>
               {activeTab === 'overview' ? 'Dashboard' 
+               : activeTab === 'reports' ? 'Reports'
                : activeTab === 'trash' ? 'Trash' 
                : activeTab === 'job' ? 'Job Details'
                : activeTab === 'settings' ? 'Settings'
@@ -167,111 +200,206 @@ function Dashboard({ user, onLogout, activeTab }) {
                 </div>
               </div>
 
-              <div className="dashboard-content-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', alignItems: 'flex-start' }}>
-                {/* ── Recent Activity Table ── */}
-                <div className="card" style={{ margin: 0, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Activity size={20} color="var(--accent-primary)" />
-                      <h3 style={{ margin: 0 }}>Recent Activity</h3>
+              {/* Live Log Panel on Dashboard */}
+              {globalLogs.length > 0 && (
+                <div className="live-log-panel" style={{ marginBottom: '24px' }}>
+                  <div className="live-log-header">
+                    <span className="live-log-title">
+                      <Terminal size={13} />
+                      Live Automation Log
+                      {runningJobs > 0 && <span className="live-log-pulse" />}
+                    </span>
+                    <button type="button" className="live-log-clear-btn" onClick={() => setGlobalLogs([])}>Clear</button>
+                  </div>
+                  <div className="live-log-box" ref={dashLogRef}>
+                    {globalLogs.map(log => (
+                      <div key={log.id} className={`live-log-line log-type-${log.type}`}>
+                        <span className="live-log-time">{new Date(log.time).toLocaleTimeString('en-IN', { hour12: false })}</span>
+                        <span className="live-log-icon">{LOG_ICONS[log.type] || '•'}</span>
+                        {log.email && <span className="live-log-email">{log.email}</span>}
+                        <span className="live-log-msg">{log.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Row 1: Donut + Daily Area Chart */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', marginBottom: '20px' }}>
+
+                {/* Donut Chart */}
+                <div className="card" style={{ margin: 0, padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                    <BarChart2 size={16} color="var(--accent-primary)" />
+                    <h3 style={{ margin: 0, fontSize: '14px' }}>Email Status</h3>
+                  </div>
+                  {globalStats.total === 0 ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '40px 0' }}>No data yet</div>
+                  ) : (
+                    <>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <PieChart>
+                          <Pie data={[
+                            { name: 'Success', value: globalStats.success },
+                            { name: 'Failed', value: globalStats.failed },
+                            { name: 'Pending', value: Math.max(0, globalStats.total - globalStats.success - globalStats.failed) }
+                          ]} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                            <Cell fill="#10b981" /><Cell fill="#ef4444" /><Cell fill="#f59e0b" />
+                          </Pie>
+                          <Tooltip contentStyle={{ background: '#1a1d2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '8px' }}>
+                        {[{ label: 'Success', val: globalStats.success, color: '#10b981' }, { label: 'Failed', val: globalStats.failed, color: '#ef4444' }, { label: 'Pending', val: Math.max(0, globalStats.total - globalStats.success - globalStats.failed), color: '#f59e0b' }].map(item => (
+                          <div key={item.label} style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: item.color }}>{item.val.toLocaleString()}</div>
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '1px' }}>{item.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Daily Area Chart */}
+                <div className="card" style={{ margin: 0, padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                    <Activity size={16} color="#60a5fa" />
+                    <h3 style={{ margin: 0, fontSize: '14px' }}>Daily Activity (Last 14 Days)</h3>
+                  </div>
+                  {dailyStats.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '40px 0' }}>No activity yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={200}>
+                      <AreaChart data={dailyStats} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="gSuccess" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="gFailed" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="gTotal" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#60a5fa" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                        <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <Tooltip
+                          contentStyle={{ background: '#1a1d2e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', fontSize: '12px' }}
+                          labelStyle={{ color: '#fff', fontWeight: 700, marginBottom: '4px' }}
+                          itemStyle={{ color: '#ccc' }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: '11px', color: '#9ca3af' }} />
+                        <Area type="monotone" dataKey="total" stroke="#60a5fa" fill="url(#gTotal)" strokeWidth={2} name="Total" dot={false} />
+                        <Area type="monotone" dataKey="success" stroke="#10b981" fill="url(#gSuccess)" strokeWidth={2} name="Success" dot={false} />
+                        <Area type="monotone" dataKey="failed" stroke="#ef4444" fill="url(#gFailed)" strokeWidth={2} name="Failed" dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 2: Jobs Bar + Recent Activity + Quick Actions */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+
+                {/* Jobs Bar Chart */}
+                <div className="card" style={{ margin: 0, padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                    <Zap size={16} color="#f59e0b" />
+                    <h3 style={{ margin: 0, fontSize: '14px' }}>Jobs Performance</h3>
+                  </div>
+                  {recentJobs.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '32px 0' }}>No jobs yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={recentJobs.map(j => ({ name: j.uploadedFile.replace(/\.xlsx?$/i, '').slice(0, 10), success: j.successCount, failed: j.failedCount, pending: j.pendingCount }))} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                        <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 9 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ background: '#1a1d2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }} />
+                        <Legend wrapperStyle={{ fontSize: '10px', color: '#9ca3af' }} />
+                        <Bar dataKey="success" fill="#10b981" radius={[3,3,0,0]} name="Success" />
+                        <Bar dataKey="failed" fill="#ef4444" radius={[3,3,0,0]} name="Failed" />
+                        <Bar dataKey="pending" fill="#f59e0b" radius={[3,3,0,0]} name="Pending" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+
+                {/* Recent Activity */}
+                <div className="card" style={{ margin: 0, padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Activity size={16} color="var(--accent-primary)" />
+                      <h3 style={{ margin: 0, fontSize: '14px' }}>Recent Activity</h3>
                     </div>
-                    <button type="button" className="text-btn" onClick={() => navigate('/uploads')} style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      View All <ArrowRight size={14} />
+                    <button type="button" className="text-btn" onClick={() => navigate('/uploads')} style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      View All <ArrowRight size={12} />
                     </button>
                   </div>
-                  
                   {recentJobs.length === 0 ? (
-                    <div className="empty-state" style={{ padding: '32px 0' }}>
-                      <p style={{ color: 'var(--text-muted)' }}>No recent jobs found.</p>
-                    </div>
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '24px 0' }}>No jobs found.</div>
                   ) : (
-                    <div className="table-responsive" style={{ margin: '0 -24px -24px -24px', borderRadius: '0 0 12px 12px', overflowX: 'auto' }}>
-                      <table className="data-table" style={{ borderBottom: 'none', width: '100%', minWidth: '400px' }}>
-                        <thead>
-                          <tr>
-                            <th>Job Name</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {recentJobs.map(job => (
-                            <tr key={job._id} onClick={() => navigate(`/job/${job._id}`)} style={{ cursor: 'pointer' }}>
-                              <td>
-                                <span style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: '200px', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {job.uploadedFile}
-                                </span>
-                              </td>
-                              <td><span className={`status-badge status-${job.status}`}>{job.status}</span></td>
-                              <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                                {new Date(job.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                      {recentJobs.map(job => (
+                        <div key={job._id} onClick={() => navigate(`/job/${job._id}`)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '7px', cursor: 'pointer', transition: 'background 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.uploadedFile}</div>
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '1px' }}>
+                              {new Date(job.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} • {job.totalEmails} emails
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>
+                            <span style={{ color: '#34d399' }}>✓{job.successCount}</span>
+                            <span style={{ color: '#f87171' }}>✗{job.failedCount}</span>
+                          </div>
+                          <span className={`status-badge status-${job.status}`} style={{ flexShrink: 0, fontSize: '10px', padding: '2px 7px' }}>{job.status}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                {/* ── Quick Actions ── */}
-                <div className="card" style={{ margin: 0, padding: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <Zap size={20} color="#f59e0b" />
-                    <h3 style={{ margin: 0 }}>Quick Actions</h3>
+                {/* Quick Actions */}
+                <div className="card" style={{ margin: 0, padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                    <Zap size={16} color="#f59e0b" />
+                    <h3 style={{ margin: 0, fontSize: '14px' }}>Quick Actions</h3>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <button 
-                      className="quick-action-btn"
-                      onClick={() => navigate('/uploads')}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', transition: 'var(--transition)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'var(--accent-primary)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
-                    >
-                      <div style={{ padding: '10px', background: 'rgba(139,92,246,0.1)', borderRadius: '10px', color: '#8b5cf6' }}>
-                        <Bot size={20} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '2px', color: 'var(--text-primary)' }}>New Automation</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Upload Excel to start</div>
-                      </div>
-                    </button>
-                    
-                    <button 
-                      className="quick-action-btn"
-                      onClick={() => navigate('/trash')}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', transition: 'var(--transition)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = '#ef4444'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
-                    >
-                      <div style={{ padding: '10px', background: 'rgba(239,68,68,0.1)', borderRadius: '10px', color: '#ef4444' }}>
-                        <Trash2 size={20} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '2px', color: 'var(--text-primary)' }}>View Trash</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Restore or delete jobs</div>
-                      </div>
-                    </button>
-
-                    <button 
-                      className="quick-action-btn"
-                      onClick={() => navigate('/settings')}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', transition: 'var(--transition)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'var(--text-muted)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
-                    >
-                      <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', color: 'var(--text-muted)' }}>
-                        <SettingsIcon size={20} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '2px', color: 'var(--text-primary)' }}>Settings</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Change UI themes</div>
-                      </div>
-                    </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {[{ label: 'New Automation', desc: 'Upload Excel to start', icon: <Bot size={18} />, color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', path: '/uploads' },
+                      { label: 'View Trash', desc: 'Restore or delete jobs', icon: <Trash2 size={18} />, color: '#ef4444', bg: 'rgba(239,68,68,0.1)', path: '/trash' },
+                      { label: 'Reports', desc: 'Export job reports', icon: <BarChart2 size={18} />, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', path: '/reports' },
+                      { label: 'Settings', desc: 'Change UI themes', icon: <SettingsIcon size={18} />, color: '#6b7280', bg: 'rgba(255,255,255,0.05)', path: '/settings' }
+                    ].map(item => (
+                      <button key={item.label} type="button"
+                        onClick={() => navigate(item.path)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', transition: 'var(--transition)', width: '100%' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = item.color; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                      >
+                        <div style={{ padding: '7px', background: item.bg, borderRadius: '7px', color: item.color, flexShrink: 0 }}>{item.icon}</div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>{item.label}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.desc}</div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
+          ) : activeTab === 'reports' ? (
+            <Reports />
           ) : activeTab === 'trash' ? (
             <Trash />
           ) : activeTab === 'job' ? (

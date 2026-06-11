@@ -253,7 +253,7 @@ function Uploads({ onUploadSuccess }) {
   };
 
   const handleDownloadSample = () => {
-    const csv = '"Email"\\n"admin@gmail.com"\\n"user1@example.com"\\n"user2@example.com"';
+    const csv = '"Email","Slot"\n"admin@gmail.com","Slot A"\n"user1@example.com","Slot B"\n"user2@example.com","Slot C"';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -309,17 +309,9 @@ function Uploads({ onUploadSuccess }) {
       sortable: false,
       align: 'right',
       render: (job) => {
-        const isActive = ['pending', 'running'].includes(job.status);
+        const isActive = job.status === 'running';
         return (
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              className="job-action-view"
-              onClick={() => navigate(`/job/${job._id}`)}
-              style={{ padding: '6px 12px', fontSize: '13px' }}
-            >
-              View
-            </button>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
             {isActive ? (
               <button
                 type="button"
@@ -357,8 +349,8 @@ function Uploads({ onUploadSuccess }) {
                 transition: 'var(--transition)',
                 opacity: isActive ? 0.3 : 1
               }}
-              onMouseEnter={e => { e.target.style.color = '#f87171'; e.target.style.borderColor = 'rgba(239,68,68,0.3)'; }}
-              onMouseLeave={e => { e.target.style.color = 'var(--text-muted)'; e.target.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
             >
               {deleteLoading === job._id ? <span className="spinner" style={{ width: '12px', height: '12px', borderWidth: '2px' }} /> : <Trash2 size={16} />}
             </button>
@@ -411,7 +403,7 @@ function Uploads({ onUploadSuccess }) {
             <div style={{ flex: '1 1 280px' }}>
               <h3>Upload Emails Excel Sheet</h3>
               <p className="card-subtitle" style={{ marginBottom: 0 }}>
-                Upload a spreadsheet containing email addresses. The system auto-detects the email column.
+                Upload a spreadsheet with <strong>Email</strong> and <strong>Slot</strong> columns. Duplicates are removed automatically and sorted A→Z.
               </p>
             </div>
             <button type="button" className="browse-btn" onClick={handleDownloadSample} style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -450,7 +442,7 @@ function Uploads({ onUploadSuccess }) {
             <div>
               <h3>Automation Jobs</h3>
               <p className="card-subtitle" style={{ marginBottom: 0 }}>
-                Click "View" on any job to see email details and control automation.
+                Click on any row to view email details and control automation.
               </p>
             </div>
             {globalStats.runningJobs > 0 && (
@@ -478,6 +470,7 @@ function Uploads({ onUploadSuccess }) {
               totalPages={totalPages}
               onTableChange={handleTableChange}
               onExport={handleExport}
+              onRowClick={(job) => navigate(`/job/${job._id}`)}
             />
           )}
         </div>

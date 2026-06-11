@@ -96,51 +96,39 @@ function DataTable({
     <div className="datatable-container">
       {/* --- Top Filters --- */}
       {showFilters && (
-        <div className="datatable-filters" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <div className="input-group" style={{ position: 'relative', width: '250px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input 
-                type="text" 
-                placeholder="Search..." 
+        <div className="datatable-filters">
+          <div className="datatable-filters-left">
+            <div className="dt-search-wrap">
+              <Search size={15} className="dt-search-icon" />
+              <input
+                type="text"
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '38px', width: '100%', height: '40px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                className="dt-input dt-search-input"
               />
             </div>
-            
-            <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ position: 'relative' }}>
-                <Calendar size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  type="date" 
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  style={{ paddingLeft: '32px', height: '40px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
-                />
-              </div>
-              <span style={{ color: 'var(--text-muted)' }}>to</span>
-              <div style={{ position: 'relative' }}>
-                <Calendar size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  type="date" 
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                  style={{ paddingLeft: '32px', height: '40px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
-                />
-              </div>
+            <div className="dt-date-wrap">
+              <Calendar size={14} className="dt-cal-icon" />
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="dt-input dt-date-input"
+              />
+              <span className="dt-date-sep">to</span>
+              <Calendar size={14} className="dt-cal-icon" />
+              <input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="dt-input dt-date-input"
+              />
             </div>
           </div>
-
           {onExport && (
-            <button 
-              type="button" 
-              className="primary-btn" 
-              onClick={onExport}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '40px' }}
-            >
-              <Download size={16} />
-              Export Excel
+            <button type="button" className="dt-export-btn" onClick={onExport}>
+              <Download size={15} /> Export
             </button>
           )}
         </div>
