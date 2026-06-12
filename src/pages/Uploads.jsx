@@ -36,6 +36,8 @@ function Uploads({ onUploadSuccess }) {
 
   const [automationLoading, setAutomationLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   const [toasts, setToasts] = useState([]);
   const addToast = useCallback((message, type = 'success') => {
@@ -152,30 +154,22 @@ function Uploads({ onUploadSuccess }) {
     }
   };
 
-  const handleStopAutomation = (jobId) => {
-    setConfirmConfig({
-      isOpen: true,
-      title: 'Stop Automation',
-      message: 'Are you sure you want to stop this job? In-progress emails may fail.',
-      action: async () => {
-        setAutomationLoading(true);
-        try {
-          const token = sessionStorage.getItem('token');
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/stop-automation`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ jobId })
-          });
-          const data = await res.json();
-          addToast(data.message, data.success ? 'success' : 'error');
-        } catch (_) {
-          addToast('Failed to stop automation', 'error');
-        } finally {
-          setAutomationLoading(false);
-          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-        }
-      }
-    });
+  const handleStopAutomation = async (jobId) => {
+    setAutomationLoading(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/emails/stop-automation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ jobId })
+      });
+      const data = await res.json();
+      addToast(data.message, data.success ? 'success' : 'error');
+    } catch (_) {
+      addToast('Failed to stop automation', 'error');
+    } finally {
+      setAutomationLoading(false);
+    }
   };
 
   const handleSoftDelete = (jobId) => {
@@ -203,11 +197,46 @@ function Uploads({ onUploadSuccess }) {
     });
   };
 
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Move to Trash',
+      message: `Are you sure you want to move ${selectedIds.length} selected job(s) to trash?`,
+      action: async () => {
+        setBulkDeleteLoading(true);
+        try {
+          const token = sessionStorage.getItem('token');
+          const results = await Promise.all(
+            selectedIds.map(id =>
+              fetch(`${import.meta.env.VITE_API_URL}/api/emails/soft-delete/${id}`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` }
+              }).then(r => r.json())
+            )
+          );
+          const failed = results.filter(r => !r.success).length;
+          if (failed > 0) addToast(`${selectedIds.length - failed} moved, ${failed} failed`, 'error');
+          else addToast(`${selectedIds.length} job(s) moved to trash`, 'success');
+          setSelectedIds([]);
+        } catch (_) {
+          addToast('Bulk delete failed', 'error');
+        } finally {
+          setBulkDeleteLoading(false);
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
+  const toggleSelect = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleSelectAll = () => setSelectedIds(prev => prev.length === filesList.length ? [] : filesList.map(j => j._id));
+
   const validateAndSetFile = (f) => {
-    const validExts = ['.xlsx', '.xls'];
+    const validExts = ['.xlsx', '.xls', '.csv'];
     const isValid = validExts.some(ext => f.name.toLowerCase().endsWith(ext));
     if (!isValid) {
-      addToast('Please select a valid Excel file (.xlsx or .xls)', 'error');
+      addToast('Please select a valid Excel or CSV file (.xlsx, .xls, .csv)', 'error');
       setFile(null);
       return;
     }
@@ -263,6 +292,26 @@ function Uploads({ onUploadSuccess }) {
   };
 
   const columns = [
+    {
+      label: (
+        <input type="checkbox"
+          checked={filesList.length > 0 && selectedIds.length === filesList.length}
+          onChange={toggleSelectAll}
+          style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+          onClick={e => e.stopPropagation()}
+        />
+      ),
+      key: 'checkbox',
+      sortable: false,
+      render: (job) => (
+        <input type="checkbox"
+          checked={selectedIds.includes(job._id)}
+          onChange={() => toggleSelect(job._id)}
+          onClick={e => e.stopPropagation()}
+          style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+        />
+      )
+    },
     {
       label: 'Job Details',
       key: 'uploadedFile',
@@ -412,7 +461,7 @@ function Uploads({ onUploadSuccess }) {
           </div>
 
           <form onDragEnter={handleDrag} onSubmit={handleUpload} className="upload-form">
-            <input type="file" id="excel-file-input" className="file-input-hidden" accept=".xlsx,.xls" onChange={handleFileChange} />
+            <input type="file" id="excel-file-input" className="file-input-hidden" accept=".xlsx,.xls,.csv" onChange={handleFileChange} />
             <label htmlFor="excel-file-input" className={`dropzone ${dragActive ? 'drag-active' : ''} ${file ? 'file-selected' : ''}`} onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}>
               <div className="dropzone-content">
                 <span className="upload-icon" style={{ color: 'var(--text-muted)' }}>{file ? <FileText size={36} /> : <UploadCloud size={40} />}</span>
@@ -445,11 +494,29 @@ function Uploads({ onUploadSuccess }) {
                 Click on any row to view email details and control automation.
               </p>
             </div>
-            {globalStats.runningJobs > 0 && (
-              <span className="status-badge status-running" style={{ fontSize: '12px', padding: '6px 14px' }}>
-                {globalStats.runningJobs} Running
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {selectedIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleteLoading}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '7px 14px', fontSize: '13px', fontWeight: 600,
+                    borderRadius: '8px', cursor: 'pointer',
+                    background: 'rgba(239,68,68,0.12)', color: '#f87171',
+                    border: '1px solid rgba(239,68,68,0.3)', transition: 'var(--transition)'
+                  }}
+                >
+                  <Trash2 size={14} /> Delete ({selectedIds.length})
+                </button>
+              )}
+              {globalStats.runningJobs > 0 && (
+                <span className="status-badge status-running" style={{ fontSize: '12px', padding: '6px 14px' }}>
+                  {globalStats.runningJobs} Running
+                </span>
+              )}
+            </div>
           </div>
 
           {filesLoading ? (

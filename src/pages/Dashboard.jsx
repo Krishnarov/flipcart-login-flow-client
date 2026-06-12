@@ -7,6 +7,7 @@ import Trash from './Trash';
 import JobDetails from './JobDetails';
 import Settings from './Settings';
 import Reports from './Reports';
+import ConfirmModal from '../components/ConfirmModal';
 import { socket } from '../socket';
 
 const LOG_ICONS = { step: '▶', success: '✅', error: '❌', warn: '⚠️', info: '•' };
@@ -18,6 +19,7 @@ function Dashboard({ user, onLogout, activeTab }) {
   const [runningJobs, setRunningJobs] = useState(0);
   const [globalLogs, setGlobalLogs] = useState([]);
   const [dailyStats, setDailyStats] = useState([]);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const dashLogRef = useRef(null);
   const navigate = useNavigate();
 
@@ -85,6 +87,15 @@ function Dashboard({ user, onLogout, activeTab }) {
 
   return (
     <div className="dashboard-layout">
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        title="Log Out"
+        message="Are you sure you want to log out?"
+        onConfirm={onLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+        type="danger"
+        confirmText="Log Out"
+      />
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -134,7 +145,7 @@ function Dashboard({ user, onLogout, activeTab }) {
           </button>
         </nav>
         <div className="sidebar-footer">
-          <button type="button" className="logout-btn" onClick={onLogout}>
+          <button type="button" className="logout-btn" onClick={() => setShowLogoutConfirm(true)}>
             <span className="nav-icon"><LogOut size={18} /></span>
             <span className="nav-label">Log Out</span>
           </button>
